@@ -14,10 +14,9 @@ public class TestServer {
             while (true) {
                 Socket c = proxy.accept();
                 int port = sessions.create();
-                Session session = sessions.getThisSession(port);
+                Session session = sessions.getSession(port);
                 new Pipe(c.getInputStream(), session.getOutputStream());
                 new Pipe(session.getInputStream(), c.getOutputStream());
-                session.start();
             }
         } catch (IOException e) {
             e.printStackTrace();

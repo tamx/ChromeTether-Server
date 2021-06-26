@@ -127,17 +127,17 @@ public class Proxy implements Runnable {
                 new Pipe(c.getInputStream(), os);
             }
         } catch (IOException e) {
-            e.printStackTrace();
-//            try {
-//                is.close();
-//            } catch (IOException e1) {
+//            e.printStackTrace();
+            try {
+                os.close();
+            } catch (IOException e1) {
 //                e1.printStackTrace();
-//            }
-//            try {
-//                os.close();
-//            } catch (IOException e1) {
+            }
+            try {
+                is.close();
+            } catch (IOException e1) {
 //                e1.printStackTrace();
-//            }
+            }
         }
         // System.out.println("Thread: " + Thread.activeCount());
     }

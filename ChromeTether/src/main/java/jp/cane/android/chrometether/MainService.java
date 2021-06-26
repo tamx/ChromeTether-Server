@@ -1,8 +1,12 @@
 package jp.cane.android.chrometether;
 
 import android.app.Notification;
+import android.app.NotificationChannel;
+import android.app.NotificationManager;
 import android.app.Service;
+import android.content.Context;
 import android.content.Intent;
+import android.os.Build;
 import android.os.IBinder;
 
 /**
@@ -19,12 +23,28 @@ public class MainService extends Service {
     @Override
     public void onCreate() {
         super.onCreate();
-        Notification notification = new Notification.Builder(this)
-                .setContentTitle(getResources().getString(R.string.app_name))
-                .setSmallIcon(R.drawable.ic_stat_name)
-                .setPriority(Notification.PRIORITY_MIN)
-                .build();
-        startForeground(1, notification);
+        String channel_id = "jp.cane.android.chrometether";
+        if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.O) {
+            NotificationChannel channel = new NotificationChannel(channel_id,
+                    "AutoPAN", NotificationManager.IMPORTANCE_NONE);
+            NotificationManager notificationManager = (NotificationManager)
+                    getSystemService(Context.NOTIFICATION_SERVICE);
+            notificationManager.createNotificationChannel(channel);
+
+            Notification notification = new Notification.Builder(this, channel_id)
+                    .setContentTitle(getResources().getString(R.string.app_name))
+                    .setSmallIcon(R.mipmap.ic_launcher)
+                    .setPriority(Notification.PRIORITY_MIN)
+                    .build();
+            startForeground(1, notification);
+        } else {
+            Notification notification = new Notification.Builder(this)
+                    .setContentTitle(getResources().getString(R.string.app_name))
+                    .setSmallIcon(R.mipmap.ic_launcher)
+                    .setPriority(Notification.PRIORITY_MIN)
+                    .build();
+            startForeground(1, notification);
+        }
         this.mainThread = new MainThread(this);
         this.mainThread.start();
     }

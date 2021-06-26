@@ -29,14 +29,13 @@ public class TestClient implements CreateListener {
 
     @Override
     public void created(int port) {
-        System.out.println("created");
-        final Session session = this.sessions.getThatSession(port);
+        // System.out.println("created");
+        final Session session = this.sessions.getSession(port);
         new Thread(new Runnable() {
             @Override
             public void run() {
                 InputStream is = session.getInputStream();
                 OutputStream os = session.getOutputStream();
-                session.start();
 //                try {
 //                    Thread.sleep(200);
 //                } catch (InterruptedException e) {
@@ -55,7 +54,6 @@ public class TestClient implements CreateListener {
                     } catch (IOException e1) {
                         e1.printStackTrace();
                     }
-                    session.receiveDown();
                 }
             }
         }).start();

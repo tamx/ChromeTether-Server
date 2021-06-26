@@ -9,7 +9,7 @@ import java.io.PipedOutputStream;
 public class Session implements Runnable {
     private Sessions sessions = null;
     private int port = 0;
-    private boolean that = false;
+    private boolean ready = false;
     private boolean up_alive = true;
     private PipedInputStream up = new PipedInputStream();
     private boolean down_alive = true;
@@ -17,10 +17,9 @@ public class Session implements Runnable {
     private PipedInputStream down_p = null;
     private PipedOutputStream up_p = null;
 
-    public Session(Sessions sessions, int port, boolean that) {
+    public Session(Sessions sessions, int port) {
         this.sessions = sessions;
         this.port = port;
-        this.that = that;
         try {
             down_p = new PipedInputStream(down);
             up_p = new PipedOutputStream(up);
@@ -29,12 +28,9 @@ public class Session implements Runnable {
         }
     }
 
-    public void start() {
+    protected void start() {
+        this.ready = true;
         new Thread(this).start();
-    }
-
-    public int getPort() {
-        return this.port;
     }
 
     public InputStream getInputStream() {
@@ -57,8 +53,8 @@ public class Session implements Runnable {
     }
 
     protected void closeDown() {
+        this.down_alive = false;
         try {
-            this.down_alive = false;
             this.down.close();
             // System.out.println("close down: " + this.port);
         } catch (IOException e) {
@@ -67,24 +63,24 @@ public class Session implements Runnable {
         checkAlive();
     }
 
-    public void receiveDown() {
+    public void closeUp() {
+        this.up_alive = false;
         try {
-            this.up_alive = false;
             this.up.close();
 //            System.out.println("close up: " + this.port);
         } catch (IOException e) {
             // e.printStackTrace();
+        }
+        try {
+            this.sessions.send('F', this.port, new byte[0], 0, 0);
+        } catch (Exception e) {
         }
         checkAlive();
     }
 
     private void checkAlive() {
         if (!this.up_alive && !this.down_alive) {
-            if (this.that) {
-                this.sessions.deleteThatSession(this.port);
-            } else {
-                this.sessions.deleteThisSession(this.port);
-            }
+            this.sessions.deleteSession(this.port);
         }
     }
 
@@ -110,18 +106,19 @@ public class Session implements Runnable {
                 if (len == -1) {
                     break;
                 }
-                int code = this.that ? 'D' : 'U';
-                this.sessions.send(code, this.port, buf, 0, len);
+                this.sessions.send('D', this.port, buf, 0, len);
                 Thread.yield();
             }
+            closeUp();
         } catch (IOException e) {
-            e.printStackTrace();
-        } finally {
+            // e.printStackTrace();
             try {
-                int code = this.that ? 'E' : 'V';
-                this.sessions.send(code, this.port, new byte[0], 0, 0);
-            } catch (Exception e) {
+                this.sessions.send('E', this.port, new byte[0], 0, 0);
+            } catch (Exception e2) {
             }
+        } finally {
+            this.up_alive = false;
+            checkAlive();
         }
     }
 }
