@@ -71,11 +71,9 @@ public class Sessions implements Runnable {
                 byte[] buf = new byte[length];
                 this.is.readFully(buf);
 
-                // System.out.println("Code recv: " + ((char) code));
-                switch (code) {
-                    case -1:
-                        return;
-                    case 'S': {
+                Session session = new Session(this, port);
+                if (session == null) {
+                    if (code == 'S') {
                         synchronized (this.portlist) {
                             if (this.portlist.containsKey(port)) {
                                 try {
@@ -83,50 +81,57 @@ public class Sessions implements Runnable {
                                 } catch (IOException e) {
                                     e.printStackTrace();
                                 }
-                                break;
+                                continue;
                             }
-                            Session session = new Session(this, port);
-                            this.portlist.put(port, session);
-                            session.start();
+                            Session newsession = new Session(this, port);
+                            this.portlist.put(port, newsession);
+                            newsession.start();
                         }
                         try {
                             send('A', port, new byte[0], 0, 0);
+                            if (this.listener != null) {
+                                this.listener.created(port);
+                            }
                         } catch (IOException e) {
                             e.printStackTrace();
                         }
-                        if (this.listener != null) {
-                            this.listener.created(port);
+                    } else {
+                        try {
+                            send('E', port, new byte[0], 0, 0);
+                        } catch (IOException e) {
+                            e.printStackTrace();
+                        }
+                    }
+                    continue;
+                }
+                // System.out.println("Code recv: " + ((char) code));
+                switch (code) {
+                    case -1:
+                        return;
+                    case 'S': {
+                        try {
+                            send('E', port, new byte[0], 0, 0);
+                        } catch (IOException e) {
+                            e.printStackTrace();
                         }
                     }
                     break;
                     case 'A': {
-                        Session session = getSession(port);
-                        if (session != null) {
-                            session.start();
-                        }
+                        session.start();
                     }
                     break;
                     case 'D': {
-                        Session session = getSession(port);
-                        if (session != null) {
-                            session.writeDown(buf, 0, length);
-                        }
+                        session.writeDown(buf, 0, length);
                     }
                     break;
                     case 'F': {
-                        Session session = getSession(port);
-                        if (session != null) {
-                            session.closeDown();
-                        }
+                        session.closeDown();
                     }
                     break;
                     case 'E': {
-                        Session session = getSession(port);
                         deleteSession(port);
-                        if (session != null) {
-                            session.closeUp();
-                            session.closeDown();
-                        }
+                        session.closeUp();
+                        session.closeDown();
                     }
                     break;
                     default:
